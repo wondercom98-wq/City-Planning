@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two Systems, One Skyline — Sewage &amp; Flood Infrastructure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:            #0a1f33;
+    --panel:         #0f2941;
+    --panel-line:    #1e3f5f;
+    --grid:          rgba(143, 178, 210, 0.07);
+    --ink:           #e8f1f8;
+    --ink-dim:       #93aec6;
+    --ink-faint:     #5c7690;
+    --flow:          #5fb4e5;
+    --flow-dim:      rgba(95, 180, 229, 0.25);
+    --barrier:       #e8a33d;
+    --barrier-dim:   rgba(232, 163, 61, 0.22);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background:var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:32px 32px;
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{ max-width:1080px; margin:0 auto; padding:0 28px; }
+
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+
+  /* ---------- Header ---------- */
+  header{
+    padding:64px 0 40px;
+    border-bottom:1px solid var(--panel-line);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--flow);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:22px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:22px; height:1px;
+    background:var(--flow);
+    display:inline-block;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(2.1rem, 5vw, 3.6rem);
+    line-height:1.06;
+    letter-spacing:-0.01em;
+    max-width:15ch;
+  }
+  h1 em{
+    font-style:normal;
+    color:var(--flow);
+  }
+  .lede{
+    margin-top:22px;
+    max-width:62ch;
+    font-size:1.05rem;
+    color:var(--ink-dim);
+  }
+  .lede strong{ color:var(--ink); font-weight:600; }
+
+  /* ---------- Diagram section ---------- */
+  .diagram-section{ padding:60px 0 20px; }
+  .diagram-frame{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:4px;
+    padding:8px;
+    position:relative;
+  }
+  .diagram-frame::before{
+    content:'FIG. 1 — SYSTEM TOPOLOGY';
+    position:absolute;
+    top:-11px; left:20px;
+    background:var(--bg);
+    padding:0 10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    color:var(--ink-faint);
+  }
+  svg{ display:block; width:100%; height:auto; }
+
+  .flow-line{
+    stroke:var(--flow);
+    stroke-width:2.5;
+    fill:none;
+    stroke-dasharray:6 8;
+    animation:flow 1.4s linear infinite;
+  }
+  @keyframes flow{ to{ stroke-dashoffset:-28; } }
+
+  .barrier-dash{
+    stroke:var(--barrier);
+    stroke-width:1.5;
+    fill:none;
+    stroke-dasharray:4 5;
+  }
+
+  .node-rect{
+    fill:var(--bg);
+    stroke:var(--flow);
+    stroke-width:1.5;
+    rx:5;
+  }
+  .node-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    fill:var(--ink);
+  }
+  .node-sub{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    fill:var(--ink-faint);
+  }
+  .box-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    fill:var(--barrier);
+    letter-spacing:0.04em;
+  }
+  .stack-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    fill:var(--flow);
+    letter-spacing:0.04em;
+  }
+  .connector-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    fill:var(--ink-faint);
+  }
+
+  /* ---------- Reveal ---------- */
+  .reveal{ opacity:0; transform:translateY(16px); transition:opacity .6s ease, transform .6s ease; }
+  .reveal.in{ opacity:1; transform:none; }
+
+  /* ---------- Component sections ---------- */
+  .system-section{ padding:80px 0 20px; }
+  .section-head{ margin-bottom:36px; }
+  .section-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--flow);
+    margin-bottom:10px;
+  }
+  .section-tag.barrier{ color:var(--barrier); }
+  h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:clamp(1.5rem, 3vw, 2rem);
+  }
+  .section-note{ color:var(--ink-dim); max-width:60ch; margin-top:10px; }
+
+  .card-row{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:1px;
+    background:var(--panel-line);
+    border:1px solid var(--panel-line);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .card{
+    background:var(--panel);
+    padding:26px 24px 28px;
+  }
+  .card-index{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--flow-dim);
+    color:var(--flow);
+    opacity:0.55;
+    margin-bottom:14px;
+  }
+  .card h3{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.08rem;
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  .card p{ color:var(--ink-dim); font-size:0.92rem; }
+  .card .stat{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--panel-line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+  .card .stat b{ color:var(--flow); font-weight:600; }
+
+  /* ---------- Coastal box (visually detached) ---------- */
+  .coastal-box{
+    margin-top:40px;
+    border:1px dashed var(--barrier-dim);
+    border-radius:4px;
+    padding:30px 28px;
+    background:linear-gradient(180deg, rgba(232,163,61,0.05), transparent);
+  }
+  .coastal-box p{ color:var(--ink-dim); max-width:68ch; }
+  .coastal-box p + p{ margin-top:14px; }
+  .coastal-box b{ color:var(--barrier); font-weight:600; }
+  .coastal-examples{
+    margin-top:20px;
+    display:flex;
+    gap:28px;
+    flex-wrap:wrap;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+  .coastal-examples span b{ display:block; color:var(--ink); font-family:'Space Grotesk', sans-serif; font-size:1.1rem; font-weight:600; margin-bottom:2px; }
+
+  /* ---------- Comparison / closing ---------- */
+  .compare-section{ padding:90px 0 60px; }
+  .compare-frame{
+    border:1px solid var(--panel-line);
+    border-radius:4px;
+    background:var(--panel);
+    padding:36px 34px;
+    position:relative;
+  }
+  .compare-frame::before{
+    content:'MARGIN NOTE';
+    position:absolute; top:-11px; left:20px;
+    background:var(--bg); padding:0 10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:0.1em; color:var(--ink-faint);
+  }
+  .compare-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:32px;
+    margin-bottom:26px;
+  }
+  .compare-col .city{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:1.3rem;
+    margin-bottom:8px;
+  }
+  .compare-col .city.flow{ color:var(--flow); }
+  .compare-col .city.mixed{ background:linear-gradient(90deg, var(--flow), var(--barrier)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .compare-col p{ color:var(--ink-dim); font-size:0.94rem; }
+  .compare-verdict{
+    padding-top:22px;
+    border-top:1px solid var(--panel-line);
+    font-size:1.02rem;
+    color:var(--ink);
+  }
+  .compare-verdict b{ color:var(--flow); }
+
+  footer{
+    padding:36px 0 60px;
+    color:var(--ink-faint);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.04em;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  @media (max-width:760px){
+    .card-row{ grid-template-columns:1fr; }
+    .compare-grid{ grid-template-columns:1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .flow-line{ animation:none; }
+    .reveal{ transition:none; opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">City Infrastructure Briefing</div>
+    <h1>Two systems get bundled<br>under one name — <em>sewage &amp; flood recovery</em>.</h1>
+    <p class="lede">They're engineered separately. One handles water your city <strong>makes</strong> — rain and waste. The other holds back water trying to <strong>get in</strong> — tides, surge, sea-level rise. NYC, Boston, and London all run both, but only London ever had to solve just one.</p>
+  </header>
+
+  <section class="diagram-section reveal">
+    <div class="diagram-frame">
+      <svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg">
+        <!-- STACK: sewage/stormwater -->
+        <text x="60" y="42" class="stack-label">01 — SEWAGE / STORMWATER (VERTICAL STACK)</text>
+
+        <!-- Collection node -->
+        <rect x="60" y="66" width="230" height="76" class="node-rect"></rect>
+        <text x="80" y="96" class="node-label">Collection network</text>
+        <text x="80" y="116" class="node-sub">catch basins → street pipes</text>
+        <text x="80" y="132" class="node-sub">fails first if undersized</text>
+
+        <path d="M175 142 V178" class="flow-line"></path>
+
+        <!-- Storage & treatment node -->
+        <rect x="60" y="178" width="230" height="92" class="node-rect"></rect>
+        <text x="80" y="206" class="node-label">Storage &amp; treatment</text>
+        <text x="80" y="226" class="node-sub">CSO tunnel / tank — shock</text>
+        <text x="80" y="240" class="node-sub">absorber for overflow</text>
+        <text x="80" y="258" class="node-sub">e.g. Gowanus, 4M gal</text>
+
+        <path d="M175 270 V306" class="flow-line"></path>
+
+        <!-- Discharge node -->
+        <rect x="60" y="306" width="230" height="70" class="node-rect"></rect>
+        <text x="80" y="334" class="node-label">Discharge</text>
+        <text x="80" y="354" class="node-sub">treated water → river/harbor</text>
+
+        <path d="M175 376 V400" class="flow-line"></path>
+        <!-- river wave -->
+        <path d="M40 412 Q80 400 120 412 T200 412 T280 412 T360 412"
+              stroke="var(--ink-faint)" stroke-width="1.5" fill="none" opacity="0.5"></path>
+        <text x="40" y="436" class="node-sub">river / harbor</text>
+
+        <!-- annotation: London tunnel -->
+        <text x="60" y="482" class="connector-label">London's Tideway tunnel = this whole stack,</text>
+        <text x="60" y="498" class="connector-label">built at 25km scale, one city's excess flow.</text>
+
+        <!-- Divider between systems -->
+        <line x1="440" y1="60" x2="440" y2="500" class="barrier-dash"></line>
+        <text x="452" y="52" class="connector-label">architecturally unrelated —</text>
+        <text x="452" y="66" class="connector-label">parallel budgets, not shared pipe</text>
+
+        <!-- COASTAL BOX: detached -->
+        <text x="600" y="42" class="box-label">02 — COASTAL / STORM-SURGE DEFENSE (SEPARATE BOX)</text>
+        <rect x="600" y="66" width="340" height="230" fill="none" stroke="var(--barrier)"
+              stroke-width="1.5" stroke-dasharray="5 6" rx="5"></rect>
+
+        <!-- floodwall icon -->
+        <path d="M630 240 V150 H660 V240" class="barrier-dash"></path>
+        <path d="M690 240 V130 H720 V240" class="barrier-dash"></path>
+        <path d="M750 240 V160 H780 V240" class="barrier-dash"></path>
+        <line x1="620" y1="240" x2="800" y2="240" stroke="var(--barrier)" stroke-width="1.5"></line>
+        <text x="620" y="130" class="node-sub">deployable gates</text>
+
+        <!-- incoming surge arrows -->
+        <path d="M930 200 L860 200" stroke="var(--barrier)" stroke-width="2" marker-end="url(#arrow)"></path>
+        <text x="820" y="192" class="node-sub" text-anchor="end">tide / surge</text>
+
+        <text x="622" y="270" class="node-sub">Boston $10B USACE plan</text>
+        <text x="622" y="286" class="node-sub">NYC Two Bridges / Battery</text>
+
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="var(--barrier)"></path>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </section>
+
+  <section class="system-section reveal">
+    <div class="section-head">
+      <div class="section-tag">01 — The Vertical Stack</div>
+      <h2>What moves through the sewage system, in order</h2>
+      <p class="section-note">Three stages, engineered to work as one continuous path from street to river. Capacity gets tested at every joint.</p>
+    </div>
+    <div class="card-row">
+      <div class="card">
+        <div class="card-index">STAGE 01</div>
+        <h3>Collection network</h3>
+        <p>Catch basins and storm drains at street level feed underground pipes. Most people never think about this layer — but it's where capacity gets exceeded first.</p>
+        <div class="stat">If a basin clogs or the pipe beneath is <b>undersized</b> for today's rainfall, water backs up before it ever reaches a plant.</div>
+      </div>
+      <div class="card">
+        <div class="card-index">STAGE 02</div>
+        <h3>Storage &amp; treatment</h3>
+        <p>The part cities are racing to build now. A CSO storage tunnel or tank acts as a shock absorber during storms.</p>
+        <div class="stat">Gowanus's tank holds <b>4 million gallons</b>. London's Tideway tunnel does the same job at <b>25km</b> — the entire city's excess flow.</div>
+      </div>
+      <div class="card">
+        <div class="card-index">STAGE 03</div>
+        <h3>Discharge</h3>
+        <p>Treated water is released to the river or harbor once the storm passes and capacity frees up.</p>
+        <div class="stat">The goal: overflow becomes a <b>rare event</b>, not a weekly one.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="system-section reveal">
+    <div class="section-head">
+      <div class="section-tag barrier">02 — The Separate Box</div>
+      <h2>Coastal defense solves a different problem entirely</h2>
+    </div>
+    <div class="coastal-box">
+      <p>This box is <b>architecturally unrelated</b> to the sewer system. It's not about water your city generates — rain, waste. It's about water trying to come in from outside: tides, storm surge, sea-level rise.</p>
+      <p>Floodwalls, deployable gates, and elevated infrastructure belong here. Sewage upgrades solve a completely different problem than a floodwall does — which is why cities need <b>both budgets running in parallel</b>, rather than one solving the other.</p>
+      <div class="coastal-examples">
+        <span><b>$10B</b>Boston — USACE coastal plan</span>
+        <span><b>Two Bridges / Battery</b>NYC surge projects</span>
+        <span><b>Tides · surge · SLR</b>what the box defends against</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="compare-section reveal">
+    <div class="compare-frame">
+      <div class="compare-grid">
+        <div class="compare-col">
+          <div class="city flow">London</div>
+          <p>Solved box 01 only. One deep tunnel, one combined sewer network, one city — no coastline to defend at the same time.</p>
+        </div>
+        <div class="compare-col">
+          <div class="city mixed">New York</div>
+          <p>Has to solve both boxes at once, on a coastline, while retrofitting a much larger and older combined system underneath one of the densest cities on Earth.</p>
+        </div>
+      </div>
+      <div class="compare-verdict">That's the actual gap between them — not ambition, not funding alone, but <b>how many systems have to work at the same time.</b></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>SEWAGE &amp; FLOOD SYSTEMS — FIELD NOTES</span>
+    <span>TWO SYSTEMS, ONE SKYLINE</span>
+  </footer>
+</div>
+
+<script>
+  const items = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  items.forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>
